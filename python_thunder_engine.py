@@ -58,12 +58,19 @@ def engine_get_error_msg(errorId):
         lib.XLGetErrorMsg(errorId, buffer, byref(bufferSize))
     return repr(buffer.value)
 
+
+
+def progressbar(progress, prefix = "", size = 30):
+    x = int(size*progress)
+    sys.stdout.write("\r%s[%s%s] %.2f%%" % (prefix, "#"*x, "."*(size-x), progress*100.0))
+    sys.stdout.flush()
+
 if __name__ == '__main__':
     success = engine_init()
     if not success:
         print "unable to init engine"
         quit()
-    saved_file_path = r"d:\temp\my.xv"
+    saved_file_path = r"d:\temp\my1.xv"
     url = "http://pubnet.sandai.net:8080/20/7ef17476e08edc8887c7b216a88895204da2c325/c8fa4ecfa6b3d9555ad53bf84d56a2d7782d221e/e849084/200000/0/4b2ea/0/0/e849084/0/index=0-25754/indexmd5=f571e87c41db4619ad6fa08dc0b69024/10279ecbc2c3d3c1487eb2c6b05311e7/b4190fa019332065d0589f86cce3a8b3/c8fa4ecfa6b3d9555ad53bf84d56a2d7782d221e_1.flv.xv?type=vod&movieid=166852&subid=439810&ext=.xv"
     errorId,taskId = engine_new_download_task(saved_file_path, url)
     if errorId != 0:
@@ -72,6 +79,7 @@ if __name__ == '__main__':
         quit()
     while True:
         import time
+        import sys
         time.sleep(1)
         errorId,status,fileSize,recvSize = engine_query_task_info(taskId)
         if errorId != 0:
@@ -80,22 +88,24 @@ if __name__ == '__main__':
             quit()
 
         if fileSize > 0:
-            progress = 100.0*float(recvSize) / float(fileSize)
-            print "Download progress:%f%%" % progress
+            progress = float(recvSize) / float(fileSize)
+            progressbar(progress, "Downloading: ")
         if status == TaskStatus.Connect:
-            print "Connections established"
+            sys.stdout.write("\rConnections established")
         elif status == TaskStatus.Download:
-            print "Downloading..."
+            pass
         elif status == TaskStatus.Pause:
-            print "Paused"
+            sys.stdout.write("\rPaused")
         elif status == TaskStatus.Success:
-            print "Downloaded successfully"
+            sys.stdout.write("Downloaded successfully\n")
             break
         elif status == TaskStatus.Fail:
-            print "Failed to download"
+            sys.stdout.write("Failed to download\n")
             break
         else:
-            print "Unknown error"
+            sys.stdout.write("Unknown error\n")
             break
+        sys.stdout.flush()
+    sys.stdout.flush()
     engine_stop_task(taskId)
     engine_exit()
